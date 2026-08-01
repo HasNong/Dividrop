@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
-import { getState, resetState, announceDividend, executeDividend, takeSnapshot, onStateChange, syncChipnetIdentifiers, getScheduledDividends } from './state.js';
+import { getState, resetState, declareDividend, announceDividend, executeDividend, takeSnapshot, onStateChange, syncChipnetIdentifiers, getScheduledDividends } from './state.js';
 import { getPastPayments } from './dividend.js';
 import { initChipnet, getLiveCompanies, getLiveHoldings, broadcastDividend, initializeHoldings, getDeployment } from './blockchain.js';
 import { generateProof } from './merkle.js';
@@ -72,6 +72,31 @@ app.post('/api/auth', (req, res) => {
   res.json({ success: true, role, companyId, holderIndex });
 });
 
+app.post('/api/dividend', (req, res) => {
+  const { companyId, rate, announcementDate, recordDate, distributionDate } = req.body as {
+    companyId: string;
+    rate: number;
+    announcementDate?: string;
+    recordDate?: string;
+    distributionDate?: string;
+  };
+  if (!companyId || typeof rate !== 'number') {
+    res.status(400).json({ success: false, error: 'companyId and rate required' });
+    return;
+  }
+
+  const result = declareDividend(companyId, rate, announcementDate, recordDate, distributionDate);
+  if (!result.success) {
+    res.status(400).json(result);
+    return;
+  }
+
+  // ensure all connected clients get the latest state
+  setTimeout(() => broadcastState(), 50);
+
+  res.json(result);
+});
+
 app.post('/api/reset', (_req, res) => {
   resetState();
   setTimeout(() => broadcastState(), 50);
@@ -94,11 +119,13 @@ app.post('/api/dividend/announce', (req, res) => {
 
 app.post('/api/dividend/execute', async (req, res) => {
   const { roundId } = req.body as { roundId: number };
-  const round = getState().dividends.find((d) => d.id === roundId);
   let realTxid: string | undefined;
-  if (round) {
-    const bcResult = await broadcastDividend(round.companyId, round.rate);
-    if (bcResult.success) realTxid = bcResult.round.txid;
+  if (chipnetReady) {
+    const round = getState().dividends.find((d) => d.id === roundId);
+    if (round) {
+      const bcResult = await broadcastDividend(round.companyId, round.rate);
+      if (bcResult.success) realTxid = bcResult.round.txid;
+    }
   }
   const result = executeDividend(roundId, realTxid);
   if (!result.success) { res.status(400).json(result); return; }
@@ -135,6 +162,7 @@ app.get('/api/verify/:roundId/:holderLabel', (req, res) => {
 });
 
 app.post('/api/init/:companyId', async (req, res) => {
+  if (!chipnetReady) { res.status(400).json({ success: false, error: 'Chipnet not available' }); return; }
   try {
     const result = await initializeHoldings(req.params.companyId);
     if (!result.success) { res.status(400).json(result); return; }
@@ -157,7 +185,17 @@ app.get('/api/payments/:holderIndex/:companyId', (req, res) => {
   res.json({ success: true, payments });
 });
 
+let chipnetReady = false;
+
+app.get('/api/mode', (_req, res) => {
+  res.json({ success: true, live: chipnetReady, mode: chipnetReady ? 'chipnet' : 'demo' });
+});
+
 app.get('/api/state/live', async (_req, res) => {
+  if (!chipnetReady) {
+    res.json({ success: false, error: 'Chipnet not available' });
+    return;
+  }
   try {
     const companies = await getLiveCompanies();
     res.json({ success: true, companies });
@@ -167,12 +205,41 @@ app.get('/api/state/live', async (_req, res) => {
 });
 
 app.get('/api/holdings/:companyId', async (req, res) => {
+  if (!chipnetReady) {
+    res.status(400).json({ success: false, error: 'Chipnet not available' });
+    return;
+  }
   try {
     const holdings = await getLiveHoldings(req.params.companyId);
     res.json({ success: true, holdings });
   } catch (e: any) {
     res.status(500).json({ success: false, error: e.message });
   }
+});
+
+app.post('/api/dividend/live', async (req, res) => {
+  if (!chipnetReady) {
+    res.status(400).json({ success: false, error: 'Chipnet not available' });
+    return;
+  }
+  const { companyId, rate, announcementDate, recordDate, distributionDate } = req.body as {
+    companyId: string;
+    rate: number;
+    announcementDate?: string;
+    recordDate?: string;
+    distributionDate?: string;
+  };
+  const result = await broadcastDividend(companyId, rate);
+  if (!result.success) {
+    res.status(400).json(result);
+    return;
+  }
+  const stateResult = declareDividend(companyId, rate, announcementDate, recordDate, distributionDate);
+  if (stateResult.success) {
+    stateResult.round.txid = result.round.txid;
+  }
+  setTimeout(() => broadcastState(), 50);
+  res.json(result);
 });
 
 if (existsSync(distPath)) {
@@ -185,14 +252,14 @@ httpServer.listen(PORT, '0.0.0.0', async () => {
   console.log(`Server running at http://localhost:${PORT}`);
   console.log(`WebSocket ready`);
 
-  const ok = await initChipnet();
-  if (!ok) {
-    console.error('FATAL: Cannot connect to chipnet. Run genesis first.');
-    process.exit(1);
+  chipnetReady = await initChipnet();
+  if (chipnetReady) {
+    const deployment = getDeployment();
+    if (deployment) syncChipnetIdentifiers(deployment);
+    console.log(`Chipnet mode active — live blockchain data`);
+  } else {
+    console.log(`Demo mode — in-memory mock data`);
   }
-  const deployment = getDeployment();
-  if (deployment) syncChipnetIdentifiers(deployment);
-  console.log(`Chipnet mode active — live blockchain data`);
 
   if (existsSync(distPath)) {
     console.log(`Serving frontend from ${distPath}`);
@@ -203,9 +270,12 @@ httpServer.listen(PORT, '0.0.0.0', async () => {
   setInterval(async () => {
     const due = getScheduledDividends();
     for (const d of due) {
-      const bcResult = await broadcastDividend(d.companyId, d.rate);
-      const txid = bcResult.success ? bcResult.round.txid : undefined;
-      const result = executeDividend(d.id, txid);
+      let realTxid: string | undefined;
+      if (chipnetReady) {
+        const bcResult = await broadcastDividend(d.companyId, d.rate);
+        if (bcResult.success) realTxid = bcResult.round.txid;
+      }
+      const result = executeDividend(d.id, realTxid);
       if (result.success) {
         console.log(`[Scheduler] Auto-executed dividend #${d.id} for ${d.companyId}`);
       }

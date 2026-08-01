@@ -4,9 +4,9 @@ import CompanyView from './components/CompanyView';
 import ShareholderView from './components/ShareholderView';
 import RegistryPage from './pages/RegistryPage';
 import LoginPage from './pages/LoginPage';
-import { initServer, onServerStateChange, fetchState, declareDividend as apiAnnounce, executeDividend as apiExecute, initializeHoldings as apiInit } from './api';
-import { mockCompanies, mockShareholders, mockDividends } from './data/mockData';
-import type { Company, Shareholder, DividendRound } from './types';
+import { initServer, onServerStateChange, fetchState, declareDividend as apiAnnounce, executeDividend as apiExecute, initializeHoldings as apiInit, isServerAvailable } from './api';
+import { mockCompanies, mockShareholders, mockDividends, getDividendPayments, getAllDividendPayments } from './data/mockData';
+import type { Company, Shareholder, DividendRound, DividendPayment } from './types';
 
 interface AuthState {
   role: 'company' | 'shareholder' | 'public';
@@ -21,6 +21,7 @@ type ServerState = {
 };
 
 export default function App() {
+  const [serverAvailable, setServerAvailable] = useState(false);
   const [serverState, setServerState] = useState<ServerState | null>(null);
   const [auth, setAuth] = useState<AuthState | null>(null);
   const [loading, setLoading] = useState(false);
@@ -33,6 +34,7 @@ export default function App() {
 
   useEffect(() => {
     initServer().then((avail) => {
+      setServerAvailable(avail);
       if (avail) {
         fetchState().then((s) => setServerState(s));
         onServerStateChange((s) => setServerState(s));
@@ -53,16 +55,27 @@ export default function App() {
   }, []);
 
   const handleAnnounce = useCallback(async (
-    companyId: string, rate: number,
-    announcementDate: string, recordDate: string, distributionDate: string, distributionTime?: string,
+    companyId: string,
+    rate: number,
+    announcementDate: string,
+    recordDate: string,
+    distributionDate: string,
+    distributionTime?: string,
   ) => {
+    if (!serverAvailable) {
+      alert(`Dividend announced in standalone mode!\nCompany: ${companyId}\nRate: ${rate}%\n\nRun the server for multi-laptop demo.`);
+      return;
+    }
     setLoading(true);
     try {
       const result = await apiAnnounce(companyId, rate, announcementDate, recordDate, distributionDate, distributionTime);
       if (!result.success) alert(`Error: ${result.error}`);
-    } catch (e: any) { alert(`Error: ${e.message}`); }
-    finally { setLoading(false); }
-  }, []);
+    } catch (e: any) {
+      alert(`Error: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [serverAvailable]);
 
   const handleExecute = useCallback(async (roundId: number) => {
     setLoading(true);
@@ -98,11 +111,11 @@ export default function App() {
   }, []);
 
   if (!auth) {
-    return <LoginPage onLogin={handleLogin} />;
+    return <LoginPage onLogin={handleLogin} serverAvailable={serverAvailable} />;
   }
 
   if (auth.role === 'public') {
-    return <RegistryPage companies={data.companies} dividends={data.dividends} onLogout={handleLogout} />;
+    return <RegistryPage companies={data.companies} dividends={data.dividends} serverAvailable={serverAvailable} onLogout={handleLogout} />;
   }
 
   return (
@@ -110,6 +123,7 @@ export default function App() {
       <Header
         role={auth.role}
         companyId={auth.companyId}
+        serverAvailable={serverAvailable}
         onChangeCompany={handleChangeCompany}
         onLogout={handleLogout}
       />
@@ -120,6 +134,7 @@ export default function App() {
             shareholders={data.shareholders}
             dividends={data.dividends.filter((d) => d.companyId === auth.companyId)}
             allCompanies={data.companies}
+            serverAvailable={serverAvailable}
             onChangeCompany={handleChangeCompany}
             onAnnounce={async (rate, ann, rec, dist, time) => handleAnnounce(auth.companyId, rate, ann, rec, dist, time)}
             onExecute={handleExecute}
@@ -134,6 +149,7 @@ export default function App() {
             allDividends={data.dividends}
             selectedHolderIndex={auth.holderIndex}
             onChangeHolder={handleChangeHolder}
+            serverAvailable={serverAvailable}
           />
         )}
       </main>
