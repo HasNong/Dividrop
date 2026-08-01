@@ -5,11 +5,10 @@ import { verifyDividend } from '../api';
 interface Props {
   companies: Company[];
   dividends: DividendRound[];
-  serverAvailable: boolean;
   onLogout: () => void;
 }
 
-export default function RegistryPage({ companies, dividends, serverAvailable, onLogout }: Props) {
+export default function RegistryPage({ companies, dividends, onLogout }: Props) {
   const [selectedCompany, setSelectedCompany] = useState(companies[0]?.id ?? '');
   const company = companies.find((c) => c.id === selectedCompany) ?? companies[0];
   const companyDividends = dividends.filter((d) => d.companyId === selectedCompany);
@@ -43,7 +42,7 @@ export default function RegistryPage({ companies, dividends, serverAvailable, on
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 py-8 space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Public Dividend Registry</h1>
@@ -69,11 +68,9 @@ export default function RegistryPage({ companies, dividends, serverAvailable, on
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Token</p>
               <p className="mt-1 text-sm font-mono text-gray-600 break-all">
-                {serverAvailable ? (
-                  <a href={`https://chipnet.bchexplorer.info/tx/${company.tokenId}`} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">
-                    {company.tokenId.substring(0, 24)}...
-                  </a>
-                ) : company.tokenId.substring(0, 24) + '...'}
+                <a href={`https://chipnet.bchexplorer.info/tx/${company.tokenId}`} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">
+                  {company.tokenId.substring(0, 24)}...
+                </a>
               </p>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -114,9 +111,9 @@ export default function RegistryPage({ companies, dividends, serverAvailable, on
                   <td className="px-5 py-3 text-right"><span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-brand-50 text-brand-700">{d.rate}%</span></td>
                   <td className="px-5 py-3 font-mono text-xs text-gray-500">{d.merkleRoot ? d.merkleRoot.substring(0, 12) + '...' : '—'}</td>
                   <td className="px-5 py-3 font-mono text-xs">
-                    {d.txid && serverAvailable ? (
+                    {d.txid ? (
                       <a href={`https://chipnet.bchexplorer.info/tx/${d.txid}`} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">{d.txid.substring(0, 12)}...</a>
-                    ) : <span className="text-gray-400">{d.txid ? d.txid.substring(0, 12) + '...' : '—'}</span>}
+                    ) : <span className="text-gray-400">—</span>}
                   </td>
                   <td className="px-5 py-3">
                     {d.merkleRoot && (

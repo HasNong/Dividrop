@@ -10,7 +10,6 @@ interface Props {
   allDividends: DividendRound[];
   selectedHolderIndex: number;
   onChangeHolder: (index: number) => void;
-  serverAvailable: boolean;
 }
 
 export default function ShareholderView({
@@ -36,7 +35,7 @@ export default function ShareholderView({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
         <label className="text-sm font-medium text-gray-600">Viewing as:</label>
         <select
@@ -51,13 +50,13 @@ export default function ShareholderView({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow duration-200">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Companies</p>
           <p className="mt-1 text-3xl font-bold text-gray-900">{companyCount}</p>
           <p className="text-sm text-gray-500">in your portfolio</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow duration-200">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total Shares</p>
           <p className="mt-1 text-3xl font-bold text-gray-900">
             {Object.values(totalSharesPerCompany).reduce((s, v) => s + v, 0).toLocaleString()}
@@ -65,10 +64,10 @@ export default function ShareholderView({
           <p className="text-sm text-gray-500">across all companies</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow duration-200">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total Dividends Received</p>
           <p className="mt-1 text-3xl font-bold text-brand-600">+{totalDividends.toLocaleString()}</p>
-          <p className="text-sm text-gray-500">from {allPayments.length} distribution{allPayments.length !== 1 ? 's' : ''}</p>
+          <p className="text-sm text-gray-500">from {allPayments.length} distributions</p>
         </div>
       </div>
 

@@ -18,7 +18,6 @@ interface Props {
   shareholders: Shareholder[];
   dividends: DividendRound[];
   allCompanies: Company[];
-  serverAvailable: boolean;
   onChangeCompany: (companyId: string) => void;
   onAnnounce: (rate: number, announcementDate: string, recordDate: string, distributionDate: string, distributionTime: string) => Promise<void>;
   onExecute: (roundId: number) => Promise<void>;
@@ -31,7 +30,6 @@ export default function CompanyView({
   shareholders,
   dividends,
   allCompanies,
-  serverAvailable,
   onChangeCompany,
   onAnnounce,
   onExecute,
@@ -73,34 +71,30 @@ export default function CompanyView({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow duration-200">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Contract Address</p>
           <p className="mt-1 text-sm font-mono text-gray-600 break-all">
-            {serverAvailable ? (
               <a href={`https://chipnet.bchexplorer.info/address/${company.contractAddress}`} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">
                 {company.contractAddress}
               </a>
-            ) : company.contractAddress}
           </p>
           <p className="mt-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Token ID</p>
           <p className="mt-1 text-sm font-mono text-gray-600 break-all">
-            {serverAvailable ? (
               <a href={`https://chipnet.bchexplorer.info/tx/${company.tokenId}`} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">
                 {company.tokenId.substring(0, 24)}...
               </a>
-            ) : company.tokenId.substring(0, 24) + '...'}
           </p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow duration-200">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total Supply</p>
           <p className="mt-1 text-3xl font-bold text-gray-900">{company.currentSupply.toLocaleString()}</p>
           <p className="text-sm text-gray-500">{company.symbol} tokens</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow duration-200">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Shareholders</p>
           <p className="mt-1 text-3xl font-bold text-gray-900">{companyShareholders.length}</p>
           <p className="text-sm text-gray-500">wallet holders</p>
@@ -122,18 +116,13 @@ export default function CompanyView({
         </div>
       )}
 
-      {serverAvailable && (
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => onInit(company.id)}
-            disabled={loading}
-            className="px-4 py-2 text-sm font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-40 transition-all"
-          >
-            Initialize Holdings
-          </button>
-          <span className="text-xs text-gray-400">Distribute initial shares from vault to all shareholders</span>
-        </div>
-      )}
+      <div className="flex items-center gap-3">
+        <button onClick={() => onInit(company.id)} disabled={loading}
+          className="px-4 py-2 text-sm font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-40 transition-all">
+          Initialize Holdings
+        </button>
+        <span className="text-xs text-gray-400">Distribute initial shares from vault to all shareholders</span>
+      </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100">
@@ -174,7 +163,7 @@ export default function CompanyView({
             <button
               onClick={() => setShowConfirm(true)}
               disabled={rate <= 0 || loading}
-              className="px-6 py-2.5 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="px-6 py-2.5 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
             >
               {loading ? 'Processing...' : 'Publish Announcement'}
             </button>
@@ -255,11 +244,9 @@ export default function CompanyView({
                 <tr key={s.address} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                   <td className="px-5 py-3 font-medium text-gray-900">{s.label}</td>
                   <td className="px-5 py-3 font-mono text-xs">
-                    {serverAvailable ? (
-                      <a href={`https://chipnet.bchexplorer.info/address/${s.address}`} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">
-                        {s.address.substring(0, 20)}...
-                      </a>
-                    ) : <span className="text-gray-500">{s.address.substring(0, 20)}...</span>}
+                    <a href={`https://chipnet.bchexplorer.info/address/${s.address}`} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">
+                      {s.address.substring(0, 20)}...
+                    </a>
                   </td>
                   <td className="px-5 py-3">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${tierColors[s.tier] ?? ''}`}>
@@ -306,11 +293,11 @@ export default function CompanyView({
                 </td>
                 <td className="px-5 py-3 text-right font-mono text-brand-700">+{d.newTokensMinted}</td>
                 <td className="px-5 py-3 font-mono text-xs">
-                  {d.txid && serverAvailable ? (
+                  {d.txid ? (
                     <a href={`https://chipnet.bchexplorer.info/tx/${d.txid}`} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">
                       {d.txid.substring(0, 16)}...
                     </a>
-                  ) : <span className="text-gray-400">{d.txid ? d.txid.substring(0, 16) + '...' : '—'}</span>}
+                  ) : <span className="text-gray-400">—</span>}
                 </td>
                 <td className="px-5 py-3 flex gap-2">
                   {d.status !== 'distributed' && (
@@ -345,7 +332,7 @@ export default function CompanyView({
 
       {showConfirm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowConfirm(false)}>
-          <div className="bg-white rounded-2xl p-6 max-w-md mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl p-6 max-w-md mx-4 shadow-2xl animate-scale-in" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-gray-900">Publish Dividend Announcement</h3>
             <p className="text-sm text-gray-500 mt-0.5">{company.name} ({company.symbol})</p>
             <div className="mt-4 space-y-2 text-sm text-gray-600">
