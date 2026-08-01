@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["AGENT.md"],
+  "references": {
+    "knowledge-base": {
+      "path": "knowledge-base",
+      "description": "Primary project knowledge base. Contains all markdown reference material: CashScript docs, Bitcoin Cash guides, CashTokens documentation, and the Stock Dividends hackathon problem brief. Consult these files before making technical or design recommendations."
+    }
+  }
+}

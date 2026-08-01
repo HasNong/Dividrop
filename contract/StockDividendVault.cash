@@ -1,0 +1,55 @@
+pragma cashscript ^0.13.0;
+
+contract StockDividendVault(
+    bytes20 companyOwner,
+    bytes32 shareTokenId
+) {
+    function distribute(
+        pubkey pk,
+        sig s,
+        bytes20 holder1, int amount1,
+        bytes20 holder2, int amount2,
+        bytes20 holder3, int amount3,
+        bytes20 holder4, int amount4,
+        bytes20 holder5, int amount5
+    ) {
+        require(hash160(pk) == companyOwner);
+        require(checkSig(s, pk));
+
+        require(this.activeInputIndex == 0);
+
+        bytes32 category, bytes capability = tx.inputs[0].tokenCategory.split(32);
+        require(category == shareTokenId);
+        require(capability == 0x02);
+
+        require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
+        require(tx.outputs[0].tokenCategory == tx.inputs[0].tokenCategory);
+
+        bytes25 lock1 = new LockingBytecodeP2PKH(holder1);
+        require(tx.outputs[1].lockingBytecode == lock1);
+        require(tx.outputs[1].tokenCategory == shareTokenId);
+        require(tx.outputs[1].tokenAmount == amount1);
+
+        bytes25 lock2 = new LockingBytecodeP2PKH(holder2);
+        require(tx.outputs[2].lockingBytecode == lock2);
+        require(tx.outputs[2].tokenCategory == shareTokenId);
+        require(tx.outputs[2].tokenAmount == amount2);
+
+        bytes25 lock3 = new LockingBytecodeP2PKH(holder3);
+        require(tx.outputs[3].lockingBytecode == lock3);
+        require(tx.outputs[3].tokenCategory == shareTokenId);
+        require(tx.outputs[3].tokenAmount == amount3);
+
+        bytes25 lock4 = new LockingBytecodeP2PKH(holder4);
+        require(tx.outputs[4].lockingBytecode == lock4);
+        require(tx.outputs[4].tokenCategory == shareTokenId);
+        require(tx.outputs[4].tokenAmount == amount4);
+
+        bytes25 lock5 = new LockingBytecodeP2PKH(holder5);
+        require(tx.outputs[5].lockingBytecode == lock5);
+        require(tx.outputs[5].tokenCategory == shareTokenId);
+        require(tx.outputs[5].tokenAmount == amount5);
+
+        require(tx.outputs.length <= 9);
+    }
+}

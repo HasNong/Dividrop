@@ -1,0 +1,23 @@
+{
+  "name": "stock-dividend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "compile": "cashc contract/StockDividendVault.cash --output contract/StockDividendVault.artifact.json",
+    "test": "vitest run",
+    "deploy": "npx tsx scripts/deploy.ts",
+    "genesis": "npx tsx scripts/genesis.ts",
+    "frontend": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "server": "cd server && npx tsx src/index.ts",
+    "build:all": "cd frontend && npm run build && cd ../server && npm run build"
+  },
+  "devDependencies": {
+    "cashc": "^0.13.0",
+    "cashscript": "^0.13.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^3.0.0",
+    "@bitauth/libauth": "^3.0.0"
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "contractName": "StockDividendVault",
+  "constructorInputs": [
+    { "name": "companyOwner", "type": "bytes20" },
+    { "name": "shareTokenId", "type": "bytes32" }
+  ],
+  "abi": [
+    {
+      "name": "distribute",
+      "inputs": [
+        { "name": "pk", "type": "pubkey" },
+        { "name": "s", "type": "sig" },
+        { "name": "holder1", "type": "bytes20" },
+        { "name": "amount1", "type": "int" },
+        { "name": "holder2", "type": "bytes20" },
+        { "name": "amount2", "type": "int" },
+        { "name": "holder3", "type": "bytes20" },
+        { "name": "amount3", "type": "int" },
+        { "name": "holder4", "type": "bytes20" },
+        { "name": "amount4", "type": "int" },
+        { "name": "holder5", "type": "bytes20" },
+        { "name": "amount5", "type": "int" }
+      ]
+    }
+  ],
+  "bytecode": "OP_4 OP_ROLL OP_SIZE 14 OP_EQUALVERIFY OP_6 OP_ROLL OP_SIZE 14 OP_EQUALVERIFY OP_8 OP_ROLL OP_SIZE 14 OP_EQUALVERIFY OP_10 OP_ROLL OP_SIZE 14 OP_EQUALVERIFY OP_12 OP_ROLL OP_SIZE 14 OP_EQUALVERIFY OP_7 OP_PICK OP_HASH160 OP_6 OP_ROLL OP_EQUALVERIFY OP_7 OP_ROLL OP_7 OP_ROLL OP_CHECKSIGVERIFY OP_INPUTINDEX OP_0 OP_NUMEQUALVERIFY OP_0 OP_UTXOTOKENCATEGORY 20 OP_SPLIT OP_SWAP OP_7 OP_PICK OP_EQUALVERIFY OP_2 OP_EQUALVERIFY OP_0 OP_OUTPUTBYTECODE OP_0 OP_UTXOBYTECODE OP_EQUALVERIFY OP_0 OP_OUTPUTTOKENCATEGORY OP_0 OP_UTXOTOKENCATEGORY OP_EQUALVERIFY 76a914 OP_5 OP_ROLL OP_CAT 88ac OP_CAT OP_1 OP_OUTPUTBYTECODE OP_EQUALVERIFY OP_1 OP_OUTPUTTOKENCATEGORY OP_5 OP_PICK OP_EQUALVERIFY OP_1 OP_OUTPUTTOKENAMOUNT OP_6 OP_ROLL OP_NUMEQUALVERIFY 76a914 OP_4 OP_ROLL OP_CAT 88ac OP_CAT OP_2 OP_OUTPUTBYTECODE OP_EQUALVERIFY OP_2 OP_OUTPUTTOKENCATEGORY OP_4 OP_PICK OP_EQUALVERIFY OP_2 OP_OUTPUTTOKENAMOUNT OP_5 OP_ROLL OP_NUMEQUALVERIFY 76a914 OP_3 OP_ROLL OP_CAT 88ac OP_CAT OP_3 OP_OUTPUTBYTECODE OP_EQUALVERIFY OP_3 OP_OUTPUTTOKENCATEGORY OP_3 OP_PICK OP_EQUALVERIFY OP_3 OP_OUTPUTTOKENAMOUNT OP_4 OP_ROLL OP_NUMEQUALVERIFY 76a914 OP_ROT OP_CAT 88ac OP_CAT OP_4 OP_OUTPUTBYTECODE OP_EQUALVERIFY OP_4 OP_OUTPUTTOKENCATEGORY OP_2 OP_PICK OP_EQUALVERIFY OP_4 OP_OUTPUTTOKENAMOUNT OP_3 OP_ROLL OP_NUMEQUALVERIFY 76a914 OP_SWAP OP_CAT 88ac OP_CAT OP_5 OP_OUTPUTBYTECODE OP_EQUALVERIFY OP_5 OP_OUTPUTTOKENCATEGORY OP_EQUALVERIFY OP_5 OP_OUTPUTTOKENAMOUNT OP_NUMEQUALVERIFY OP_TXOUTPUTCOUNT OP_9 OP_LESSTHANOREQUAL",
+  "source": "pragma cashscript ^0.13.0;\n\ncontract StockDividendVault(\n    bytes20 companyOwner,\n    bytes32 shareTokenId\n) {\n    function distribute(\n        pubkey pk,\n        sig s,\n        bytes20 holder1, int amount1,\n        bytes20 holder2, int amount2,\n        bytes20 holder3, int amount3,\n        bytes20 holder4, int amount4,\n        bytes20 holder5, int amount5\n    ) {\n        require(hash160(pk) == companyOwner);\n        require(checkSig(s, pk));\n\n        require(this.activeInputIndex == 0);\n\n        bytes32 category, bytes capability = tx.inputs[0].tokenCategory.split(32);\n        require(category == shareTokenId);\n        require(capability == 0x02);\n\n        require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);\n        require(tx.outputs[0].tokenCategory == tx.inputs[0].tokenCategory);\n\n        bytes25 lock1 = new LockingBytecodeP2PKH(holder1);\n        require(tx.outputs[1].lockingBytecode == lock1);\n        require(tx.outputs[1].tokenCategory == shareTokenId);\n        require(tx.outputs[1].tokenAmount == amount1);\n\n        bytes25 lock2 = new LockingBytecodeP2PKH(holder2);\n        require(tx.outputs[2].lockingBytecode == lock2);\n        require(tx.outputs[2].tokenCategory == shareTokenId);\n        require(tx.outputs[2].tokenAmount == amount2);\n\n        bytes25 lock3 = new LockingBytecodeP2PKH(holder3);\n        require(tx.outputs[3].lockingBytecode == lock3);\n        require(tx.outputs[3].tokenCategory == shareTokenId);\n        require(tx.outputs[3].tokenAmount == amount3);\n\n        bytes25 lock4 = new LockingBytecodeP2PKH(holder4);\n        require(tx.outputs[4].lockingBytecode == lock4);\n        require(tx.outputs[4].tokenCategory == shareTokenId);\n        require(tx.outputs[4].tokenAmount == amount4);\n\n        bytes25 lock5 = new LockingBytecodeP2PKH(holder5);\n        require(tx.outputs[5].lockingBytecode == lock5);\n        require(tx.outputs[5].tokenCategory == shareTokenId);\n        require(tx.outputs[5].tokenAmount == amount5);\n\n        require(tx.outputs.length <= 9);\n    }\n}\n",
+  "fingerprint": "0488c136988ce7fec3f9b1d5d32c615ca7795b01a3d615a9a544d52c580cc95c",
+  "debug": {
+    "bytecode": "547a82011488567a82011488587a820114885a7a820114885c7a820114885779a9567a88577a577aadc0009d00ce01207f7c577988528800cd00c78800d100ce880376a914557a7e0288ac7e51cd8851d155798851d3567a9d0376a914547a7e0288ac7e52cd8852d154798852d3557a9d0376a914537a7e0288ac7e53cd8853d153798853d3547a9d0376a9147b7e0288ac7e54cd8854d152798854d3537a9d0376a9147c7e0288ac7e55cd8855d18855d39dc459a1",
+    "sourceMap": "10:8:10:23;;;;;11::11;;;;;12::12;;;;;13::13;;;;;14::14;;;;;16:24:16:26;;:16::27:1;:31::43:0;;:8::45:1;17:25:17:26:0;;:28::30;;:8::33:1;19:16:19:37:0;:41::42;:8::44:1;21:55:21:56:0;:45::71:1;:78::80:0;:45::81:1;22:16:22:24:0;:28::40;;:8::42:1;23:30:23:34:0;:8::36:1;25:27:25:28:0;:16::45:1;:59::60:0;:49::77:1;:8::79;26:27:26:28:0;:16::43:1;:57::58:0;:47::73:1;:8::75;28:24:28:57:0;:49::56;;:24::57:1;;;29:27:29:28:0;:16::45:1;:8::56;30:27:30:28:0;:16::43:1;:47::59:0;;:8::61:1;31:27:31:28:0;:16::41:1;:45::52:0;;:8::54:1;33:24:33:57:0;:49::56;;:24::57:1;;;34:27:34:28:0;:16::45:1;:8::56;35:27:35:28:0;:16::43:1;:47::59:0;;:8::61:1;36:27:36:28:0;:16::41:1;:45::52:0;;:8::54:1;38:24:38:57:0;:49::56;;:24::57:1;;;39:27:39:28:0;:16::45:1;:8::56;40:27:40:28:0;:16::43:1;:47::59:0;;:8::61:1;41:27:41:28:0;:16::41:1;:45::52:0;;:8::54:1;43:24:43:57:0;:49::56;:24::57:1;;;44:27:44:28:0;:16::45:1;:8::56;45:27:45:28:0;:16::43:1;:47::59:0;;:8::61:1;46:27:46:28:0;:16::41:1;:45::52:0;;:8::54:1;48:24:48:57:0;:49::56;:24::57:1;;;49:27:49:28:0;:16::45:1;:8::56;50:27:50:28:0;:16::43:1;:8::61;51:27:51:28:0;:16::41:1;:8::54;53:16:53:33:0;:37::38;:8::40:1",
+    "logs": [],
+    "requires": [
+      { "ip": 32, "line": 16 },
+      { "ip": 37, "line": 17 },
+      { "ip": 40, "line": 19 },
+      { "ip": 48, "line": 22 },
+      { "ip": 50, "line": 23 },
+      { "ip": 55, "line": 25 },
+      { "ip": 60, "line": 26 },
+      { "ip": 69, "line": 29 },
+      { "ip": 74, "line": 30 },
+      { "ip": 79, "line": 31 },
+      { "ip": 88, "line": 34 },
+      { "ip": 93, "line": 35 },
+      { "ip": 98, "line": 36 },
+      { "ip": 107, "line": 39 },
+      { "ip": 112, "line": 40 },
+      { "ip": 117, "line": 41 },
+      { "ip": 125, "line": 44 },
+      { "ip": 130, "line": 45 },
+      { "ip": 135, "line": 46 },
+      { "ip": 143, "line": 49 },
+      { "ip": 146, "line": 50 },
+      { "ip": 149, "line": 51 },
+      { "ip": 153, "line": 53 }
+    ],
+    "sourceTags": "0:4:pv;5:9:pv;10:14:pv;15:19:pv;20:24:pv"
+  },
+  "compiler": {
+    "name": "cashc",
+    "version": "0.13.2",
+    "options": {
+      "enforceFunctionParameterTypes": true,
+      "enforceLocktimeGuard": true
+    }
+  },
+  "updatedAt": "2026-08-01T20:05:37.567Z"
+}
