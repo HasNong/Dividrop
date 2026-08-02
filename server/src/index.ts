@@ -6,6 +6,7 @@ import { getState, resetState, declareDividend, announceDividend, executeDividen
 import { getPastPayments } from './dividend.js';
 import { initChipnet, getLiveCompanies, getLiveHoldings, broadcastDividend, initializeHoldings, getDeployment } from './blockchain.js';
 import { generateProof } from './merkle.js';
+import { login, register, seedUserPasswords } from './auth.js';
 import type { AuthPayload } from './types.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -63,13 +64,30 @@ app.get('/api/state', (_req, res) => {
   res.json({ success: true, state: getState() });
 });
 
-app.post('/api/auth', (req, res) => {
-  const { role, companyId, holderIndex } = req.body as AuthPayload;
-  if (!role || (role !== 'company' && role !== 'shareholder')) {
-    res.status(400).json({ success: false, error: 'Invalid role' });
+app.post('/api/auth', async (req, res) => {
+  const { username, password } = req.body as AuthPayload;
+  if (!username || !password) {
+    res.status(400).json({ success: false, error: 'Username and password required' });
     return;
   }
-  res.json({ success: true, role, companyId, holderIndex });
+  const result = await login(username, password);
+  if (!result.success) { res.status(401).json(result); return; }
+  res.json(result);
+});
+
+app.post('/api/register', async (req, res) => {
+  const { role, username, password, fullName, companyId } = req.body as AuthPayload;
+  if (!role || !username || !password || !fullName) {
+    res.status(400).json({ success: false, error: 'All fields required' });
+    return;
+  }
+  if (role !== 'company' && role !== 'shareholder') {
+    res.status(400).json({ success: false, error: 'Role must be company or shareholder' });
+    return;
+  }
+  const result = await register(role, username, fullName, password, companyId);
+  if (!result.success) { res.status(400).json(result); return; }
+  res.json(result);
 });
 
 app.post('/api/dividend', (req, res) => {
@@ -119,15 +137,11 @@ app.post('/api/dividend/announce', (req, res) => {
 
 app.post('/api/dividend/execute', async (req, res) => {
   const { roundId } = req.body as { roundId: number };
-  let realTxid: string | undefined;
-  if (chipnetReady) {
-    const round = getState().dividends.find((d) => d.id === roundId);
-    if (round) {
-      const bcResult = await broadcastDividend(round.companyId, round.rate);
-      if (bcResult.success) realTxid = bcResult.round.txid;
-    }
-  }
-  const result = executeDividend(roundId, realTxid);
+  const round = getState().dividends.find((d) => d.id === roundId);
+  if (!round) { res.status(404).json({ success: false, error: 'Round not found' }); return; }
+  const bcResult = await broadcastDividend(round.companyId, round.rate);
+  if (!bcResult.success) { res.status(400).json({ success: false, error: `Chain error: ${bcResult.error}` }); return; }
+  const result = executeDividend(roundId, bcResult.round.txid);
   if (!result.success) { res.status(400).json(result); return; }
   setTimeout(() => broadcastState(), 50);
   res.json(result);
@@ -162,7 +176,6 @@ app.get('/api/verify/:roundId/:holderLabel', (req, res) => {
 });
 
 app.post('/api/init/:companyId', async (req, res) => {
-  if (!chipnetReady) { res.status(400).json({ success: false, error: 'Chipnet not available' }); return; }
   try {
     const result = await initializeHoldings(req.params.companyId);
     if (!result.success) { res.status(400).json(result); return; }
@@ -185,61 +198,18 @@ app.get('/api/payments/:holderIndex/:companyId', (req, res) => {
   res.json({ success: true, payments });
 });
 
-let chipnetReady = false;
-
-app.get('/api/mode', (_req, res) => {
-  res.json({ success: true, live: chipnetReady, mode: chipnetReady ? 'chipnet' : 'demo' });
-});
-
 app.get('/api/state/live', async (_req, res) => {
-  if (!chipnetReady) {
-    res.json({ success: false, error: 'Chipnet not available' });
-    return;
-  }
   try {
     const companies = await getLiveCompanies();
     res.json({ success: true, companies });
-  } catch (e: any) {
-    res.status(500).json({ success: false, error: e.message });
-  }
+  } catch (e: any) { res.status(500).json({ success: false, error: e.message }); }
 });
 
 app.get('/api/holdings/:companyId', async (req, res) => {
-  if (!chipnetReady) {
-    res.status(400).json({ success: false, error: 'Chipnet not available' });
-    return;
-  }
   try {
     const holdings = await getLiveHoldings(req.params.companyId);
     res.json({ success: true, holdings });
-  } catch (e: any) {
-    res.status(500).json({ success: false, error: e.message });
-  }
-});
-
-app.post('/api/dividend/live', async (req, res) => {
-  if (!chipnetReady) {
-    res.status(400).json({ success: false, error: 'Chipnet not available' });
-    return;
-  }
-  const { companyId, rate, announcementDate, recordDate, distributionDate } = req.body as {
-    companyId: string;
-    rate: number;
-    announcementDate?: string;
-    recordDate?: string;
-    distributionDate?: string;
-  };
-  const result = await broadcastDividend(companyId, rate);
-  if (!result.success) {
-    res.status(400).json(result);
-    return;
-  }
-  const stateResult = declareDividend(companyId, rate, announcementDate, recordDate, distributionDate);
-  if (stateResult.success) {
-    stateResult.round.txid = result.round.txid;
-  }
-  setTimeout(() => broadcastState(), 50);
-  res.json(result);
+  } catch (e: any) { res.status(500).json({ success: false, error: e.message }); }
 });
 
 if (existsSync(distPath)) {
@@ -252,14 +222,12 @@ httpServer.listen(PORT, '0.0.0.0', async () => {
   console.log(`Server running at http://localhost:${PORT}`);
   console.log(`WebSocket ready`);
 
-  chipnetReady = await initChipnet();
-  if (chipnetReady) {
-    const deployment = getDeployment();
-    if (deployment) syncChipnetIdentifiers(deployment);
-    console.log(`Chipnet mode active — live blockchain data`);
-  } else {
-    console.log(`Demo mode — in-memory mock data`);
-  }
+  const ok = await initChipnet();
+  if (!ok) { console.error('FATAL: Cannot connect to chipnet. Run genesis first.'); process.exit(1); }
+  const deployment = getDeployment();
+  if (deployment) syncChipnetIdentifiers(deployment);
+  await seedUserPasswords();
+  console.log(`Chipnet mode active — live blockchain data`);
 
   if (existsSync(distPath)) {
     console.log(`Serving frontend from ${distPath}`);
@@ -267,18 +235,20 @@ httpServer.listen(PORT, '0.0.0.0', async () => {
     console.log(`Frontend not built — run "npm run frontend:build" first`);
   }
 
+  const failedDividends = new Set<number>();
+
   setInterval(async () => {
     const due = getScheduledDividends();
     for (const d of due) {
-      let realTxid: string | undefined;
-      if (chipnetReady) {
-        const bcResult = await broadcastDividend(d.companyId, d.rate);
-        if (bcResult.success) realTxid = bcResult.round.txid;
+      if (failedDividends.has(d.id)) continue;
+      const bcResult = await broadcastDividend(d.companyId, d.rate);
+      if (!bcResult.success) {
+        failedDividends.add(d.id);
+        console.log(`[Scheduler] Dividend #${d.id} failed — won't retry`);
+        continue;
       }
-      const result = executeDividend(d.id, realTxid);
-      if (result.success) {
-        console.log(`[Scheduler] Auto-executed dividend #${d.id} for ${d.companyId}`);
-      }
+      const result = executeDividend(d.id, bcResult.round.txid);
+      if (result.success) console.log(`[Scheduler] Auto-executed dividend #${d.id} for ${d.companyId}`);
     }
   }, 60_000);
 });

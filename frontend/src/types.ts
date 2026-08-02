@@ -58,3 +58,11 @@ export interface AppState {
   selectedCompanyId: string;
   selectedHolderIndex: number;
 }
+
+export interface AuthUser {
+  id: number;
+  role: 'company' | 'shareholder';
+  username: string;
+  fullName: string;
+  companyId: string | null;
+}

@@ -59,7 +59,11 @@ export interface ServerState {
 }
 
 export interface AuthPayload {
-  role: 'company' | 'shareholder';
+  role?: 'company' | 'shareholder';
   companyId?: string;
   holderIndex?: number;
+  username?: string;
+  password?: string;
+  fullName?: string;
+  action?: 'login' | 'register';
 }

@@ -1,7 +1,7 @@
 {
   "acme": {
-    "tokenId": "45aabdb7d976cc05cac448e8f3f80a52528765634ed603ec02dd82909f9294f0",
-    "contractAddress": "bchtest:rwcsjpdlpaj7ej4uwq7crsedtzx8wdqpxc8xnspfl9u8kyvul0euzdx903tnf",
+    "tokenId": "7b88ef17bad1029833657ddae15ea6516b08379d28b77cde8f067a72086f5327",
+    "contractAddress": "bchtest:rwhdqddzx3tqdy0w9m3ycy7swzlhmg8gxymhd2uz3xr4tgpellp9uzv2zxr5v",
     "holders": {
       "Alice (CEO)": "bchtest:zqsmeq8pee5px5z3f3uj57cu8dch9d5x55ntd7vtkz",
       "Bob (Investor)": "bchtest:zrs450sqyndmgldhvtarlyle9lzqvsmq5ve5spmyfv",
@@ -11,8 +11,8 @@
     }
   },
   "globex": {
-    "tokenId": "15f9e6d4e0d50d06303787e61cecb5caa330ac4838d80905f81c8de82b1935c5",
-    "contractAddress": "bchtest:rv5m4z8kxxa86ce0yqv9cy2camhp4q7emg36rly8dwekx5k95ly4jwvfs4jje",
+    "tokenId": "d7d64e6e9055e7d84522d0feff6b795ad5c611b6834f67a5b5d13e8887df5ed7",
+    "contractAddress": "bchtest:rvgnhlex36kn4acxzd4qarz9sus8nwsz49d9x3356l3gnx07yfeej80lr5r3e",
     "holders": {
       "Alice (CEO)": "bchtest:zp96rfak0qf8hpx80c52kyg36827fmx9zg6fvsj220",
       "Bob (Investor)": "bchtest:zp2vus3t78qh9tsq7kk5530l87dqk7r77vtna4pg5s",

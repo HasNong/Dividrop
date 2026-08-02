@@ -8,13 +8,17 @@
     "dev": "npx tsx src/index.ts"
   },
   "dependencies": {
+    "@bitauth/libauth": "^3.0.0",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^13.0.2",
+    "cashscript": "^0.13.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
-    "ws": "^8.18.0",
-    "cashscript": "^0.13.0",
-    "@bitauth/libauth": "^3.0.0"
+    "ws": "^8.18.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.1",
     "@types/ws": "^8.5.10",
